@@ -2,7 +2,10 @@
 import pprint
 
 def get_list():
-    time_matrix = [["None"]*25 for i in range(25)]
+    """
+    Return: 各ポイント間の移動時間をまとめたlist
+    """
+    time_matrix = [["None"]*25 for _ in range(25)]
 
     colums = []
 
