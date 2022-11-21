@@ -66,7 +66,7 @@ def get_heuristic_value(fr,candidate_for_nodes,passed_times,warp_point,weight_wa
             heuristic_values.append(1/passed_time)
         elif n in warp_point:
             #ワープポイントへの移動の際には、ランダムで移動時間を増やす
-            heuristic_values.append(1/(passed_time + (weight_warp_point/3) + weight_warp_point*random.random()))
+            heuristic_values.append(1/(passed_time + weight_warp_point ))
 
     return heuristic_values
 
@@ -85,7 +85,7 @@ def cycle_step(ants,time_between_edges,alpha,beta,pheromone_on_edges,nodes_of_wa
     pheromone_evap_rate : フェロモン蒸発率
     """
 
-    limit_step_times = 40 #ノード間を移動できる最大の回数
+    limit_step_times = 30 #ノード間を移動できる最大の回数
 
     finished_ants = [] #全ての回るべき場所を回ったあり
     for _ in range(limit_step_times):
@@ -118,7 +118,7 @@ def cycle_step(ants,time_between_edges,alpha,beta,pheromone_on_edges,nodes_of_wa
                                 nodes_selectable.append(order)
 
                 pheromone_affect_values = get_pheromone_affect(ant.now_node,pheromone_on_edges,nodes_selectable)
-                heuristic_values = get_heuristic_value(ant.now_node,nodes_selectable,time_between_edges,nodes_of_warp_point)
+                heuristic_values = get_heuristic_value(ant.now_node,nodes_selectable,time_between_edges,nodes_of_warp_point,weight_warp_point=50)
 
                 #それぞれの選択確率を求める
                 tmp_pheromone_multiply_heuristic = [] #フェロモン効果とヒューリスティック値を掛け合わせた値
@@ -150,27 +150,27 @@ def cycle_step(ants,time_between_edges,alpha,beta,pheromone_on_edges,nodes_of_wa
 
         #フェロモンの付着を行う
         should_passed_node = set(range(25))  - set(nodes_of_warp_point) #通過するべきノード
-        for ant in ants:
+        for order,ant in enumerate(ants):
             ant = ant[0]
             #フェロモンを付着させる.ワープポイントへの移動をしづらくする
             ant_from = ant.passed_nodes[-2]
             ant_to = ant.passed_nodes[-1]
             if ant_to in nodes_of_warp_point:
                 #ワープポイントへの移動の際に、フェロモンがつきにくくする
-                pheromone_on_edges[ant_from][ant_to] += ant.pheromone_amount/(time_between_edges[ant_from][ant_to] + random.randint(5,10))
+                pheromone_on_edges[ant_from][ant_to] += ant.pheromone_amount/(time_between_edges[ant_from][ant_to] + 20)
             else:
                 pheromone_on_edges[ant_from][ant_to] += ant.pheromone_amount/time_between_edges[ant_from][ant_to]
 
             #終了条件を満たしているアリを省く
             if set(ant.passed_nodes) >= should_passed_node:
                     finished_ants.append(ant)
-                    ants.remove(ant) #removeの使い方が怪しい・・・これで外せるか・・・？無理そうならenumerateで場所指定で抜く
+                    ants.pop(order) 
 
     return (finished_ants,ants)
 
             
             
-def ant_colony_apt(ant_num,cycle_num,alpha = 1,beta = 1,pheromone_evap_rate = 0.5,print_progress = False):
+def ant_colony_opt(ant_num,cycle_num,alpha = 1,beta = 1,pheromone_evap_rate = 1,print_progress = False):
     """
     アントコロニー最適化を利用し、最適解を見つける
 
@@ -187,7 +187,7 @@ def ant_colony_apt(ant_num,cycle_num,alpha = 1,beta = 1,pheromone_evap_rate = 0.
     pheromone_evap_rate : フェロモン蒸発率
     print_progress : 途中経過を出力するかどうか
     """
-    pheromone_on_edges = [[1]*25 for _ in range(25)]#各エッジのフェロモン量.初期値を1にする
+    pheromone_on_edges = [[0.01]*25 for _ in range(25)]#各エッジのフェロモン量.初期値を1にする
     nodes_of_warp_point = [1,2,5,8,12,15,19,20,23]#ワープポイントであるノードの番号
     time_between_edges = set_points_information.get_list()#各エッジ間を移動する際の時間
 
@@ -198,14 +198,13 @@ def ant_colony_apt(ant_num,cycle_num,alpha = 1,beta = 1,pheromone_evap_rate = 0.
             #結果を出力する
             if len(ants_result[0]) != 0: #回るべき全てのエッジを回ることができたありがいた場合
                 print("★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★")
-                print(f'第{generation}世代、・・・成功！！、代表の経路:{ants_result[0][0][0].passed_nodes}')
-                print("★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★")
+                print(f'第{generation}世代、・・・成功！！、代表の経路:{ants_result[0][0].passed_nodes}')
+                #print("★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★-★")
             else: #誰も指定回数いないで、全てのエッジを回ることができなかった場合
                 print(f'第{generation}世代、・・・失敗！！、代表の経路:{ants_result[1][0][0].passed_nodes}')
 
-ant_colony_apt(ant_num=50,cycle_num=50,alpha=1,beta=1,pheromone_evap_rate=0.9,print_progress=True)
+ant_colony_opt(ant_num=100,cycle_num=100,alpha=0.3,beta=2,pheromone_evap_rate=0.9,print_progress=True)
 
-    
 
     
 

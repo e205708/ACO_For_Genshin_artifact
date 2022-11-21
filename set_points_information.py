@@ -78,7 +78,7 @@ def get_list():
         #自分自身へは移動できない様にする
         time_matrix[order][order] = "None"
 
-    pprint.pprint(time_matrix,width=300)
+    #pprint.pprint(time_matrix,width=300)
 
     return time_matrix
 
