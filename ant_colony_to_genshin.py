@@ -5,7 +5,7 @@ import random
 
 class ant:
     def __init__(self,pheromone_amount=10):
-        self.now_node = 15 #現在いるノードの番号
+        self.now_node = 1 #現在いるノードの番号
         self.passed_nodes = [self.now_node] #経過したノード
         #self.is_finished = False #回るべきノードを全て回り切ったかどうか
         self.pheromone_amount = pheromone_amount #1サイクルで付着させるフェロモン量
@@ -85,7 +85,7 @@ def cycle_step(ants,time_between_edges,alpha,beta,pheromone_on_edges,nodes_of_wa
     pheromone_evap_rate : フェロモン蒸発率
     """
 
-    limit_step_times = 30 #ノード間を移動できる最大の回数
+    limit_step_times = 25 #ノード間を移動できる最大の回数
 
     finished_ants = [] #全ての回るべき場所を回ったあり
     for _ in range(limit_step_times):
@@ -168,7 +168,26 @@ def cycle_step(ants,time_between_edges,alpha,beta,pheromone_on_edges,nodes_of_wa
 
     return (finished_ants,ants)
 
-            
+def search_most_short_root(ants,time_between_edges):
+    """
+    解候補の中から、最も短いルートである解を出力する。
+    ants : アリオブジェクトのリスト(list)
+    time_between_edges : エッジを移動するためにかかる移動時間
+
+    return
+    最小の距離のantオブジェクト
+    """
+
+    elapsed_times = [] #各ルートでかかる時間
+
+    for ant in ants:
+        sum_elaped_time = 0
+        for r in range(len(ant.passed_nodes) - 1): #エラー出たら-1
+            sum_elaped_time += time_between_edges[ant.passed_nodes[r]][ant.passed_nodes[r+1]]
+        elapsed_times.append(sum_elaped_time)
+    
+    return ants[elapsed_times.index(min(elapsed_times))]
+
             
 def ant_colony_opt(ant_num,cycle_num,alpha = 1,beta = 1,pheromone_evap_rate = 1,print_progress = False):
     """
@@ -191,9 +210,16 @@ def ant_colony_opt(ant_num,cycle_num,alpha = 1,beta = 1,pheromone_evap_rate = 1,
     nodes_of_warp_point = [1,2,5,8,12,15,19,20,23]#ワープポイントであるノードの番号
     time_between_edges = set_points_information.get_list()#各エッジ間を移動する際の時間
 
+    candidate_for_ants = [] #解候補のあり
     for generation in range(cycle_num):
         ants = [[ant()] for _ in range(ant_num) ]
         ants_result = cycle_step(ants,time_between_edges,alpha,beta,pheromone_on_edges,nodes_of_warp_point,pheromone_evap_rate)
+
+        #解候補をcandidate_for_antsに追加する
+        if len(ants_result[0]) != 0:
+            for a in ants_result[0]:
+                candidate_for_ants.append(a)
+        
         if (generation == (cycle_num -1)) or print_progress:
             #結果を出力する
             if len(ants_result[0]) != 0: #回るべき全てのエッジを回ることができたありがいた場合
@@ -203,7 +229,18 @@ def ant_colony_opt(ant_num,cycle_num,alpha = 1,beta = 1,pheromone_evap_rate = 1,
             else: #誰も指定回数いないで、全てのエッジを回ることができなかった場合
                 print(f'第{generation}世代、・・・失敗！！、代表の経路:{ants_result[1][0][0].passed_nodes}')
 
-ant_colony_opt(ant_num=100,cycle_num=100,alpha=0.3,beta=2,pheromone_evap_rate=0.9,print_progress=True)
+    #候補解の中で最良の解を出力する。
+    if len(candidate_for_ants) != 0:
+        best_ant = search_most_short_root(candidate_for_ants,time_between_edges)
+        print("/-/-/-/-/-/")
+        print("/-/-/-/-/-/")
+        print(f'最適なルート:{best_ant.passed_nodes}')
+        print("/-/-/-/-/-/")
+        print("/-/-/-/-/-/")
+    else:
+        print("解を発見することができませんでした")
+
+ant_colony_opt(ant_num=50,cycle_num=50,alpha=0.3,beta=2,pheromone_evap_rate=0.75,print_progress=False)
 
 
     
